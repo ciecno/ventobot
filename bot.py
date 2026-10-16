@@ -233,6 +233,26 @@ def create_locker_collage(
     canvas.save(buf, format="JPEG", quality=92)
     return buf.getvalue()
 
+def get_scalable_font(size: int, bold: bool = True):
+    """Load a scalable TrueType font with fallbacks for both Windows and Linux (Render)."""
+    candidates = [
+        "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
+        "C:/Windows/Fonts/segoeuib.ttf" if bold else "C:/Windows/Fonts/segoeui.ttf",
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",
+        "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf" if bold else "/usr/share/fonts/truetype/liberation/LiberationSans-Regular.ttf",
+        "/usr/share/fonts/TTF/DejaVuSans-Bold.ttf"
+    ]
+    for p in candidates:
+        if os.path.exists(p):
+            try:
+                return ImageFont.truetype(p, size)
+            except Exception:
+                pass
+    try:
+        return ImageFont.load_default(size=size)
+    except Exception:
+        return ImageFont.load_default()
+
 def restyle_category_image(
     im_bytes: bytes,
     cat_type: str = "skins",
@@ -240,58 +260,65 @@ def restyle_category_image(
     shop_cnt: int = 0
 ) -> bytes:
     """
-    Restyles raw image into the clean Fortnite checker layout:
-    - Downscaled to max 750px height to save server RAM
-    - Pure solid black background for header
+    Restyles raw image into a high-definition, crystal-clear Fortnite locker layout:
+    - Maintains crisp native HD resolution (no aggressive downscaling)
+    - Solid black header with large, bold typography (Linux & Windows compatible)
     - Authentic white icon (shirt, pickaxe, dance) on top-left
     - Clean divider bar '|'
-    - White bold count: '[total] ([shop])'
-    - Category subtitle: 'Skins' / 'Pickaxes' / 'Dances'
+    - Covers bottom supplier watermark & timestamp completely with store branding
     """
     im = Image.open(io.BytesIO(im_bytes)).convert("RGB")
     
-    # Downscale huge locker images to 750px max to prevent OOM
-    if im.height > 750:
-        ratio = 750.0 / im.height
+    # Cap max height at 1500px for sharp HD viewing without excessive memory
+    if im.height > 1500:
+        ratio = 1500.0 / im.height
         new_w = max(1, int(im.width * ratio))
-        resized_im = im.resize((new_w, 750), Image.Resampling.BILINEAR)
+        resized_im = im.resize((new_w, 1500), Image.Resampling.LANCZOS)
         im.close()
         im = resized_im
 
     draw = ImageDraw.Draw(im)
 
     # 1. Fill top header area with pure black (0, 0, 0)
-    header_h = 70
+    header_h = 76
     draw.rectangle([0, 0, im.width, header_h], fill=(0, 0, 0))
 
-    # 2. Paste authentic icon
+    # 2. Paste authentic category icon
     icon_path = os.path.join(BASE_DIR, f"assets/icons/{cat_type}.png")
     if os.path.exists(icon_path):
         try:
             with Image.open(icon_path) as icon:
-                im.paste(icon, (14, 12))
+                icon_h = min(48, icon.height)
+                icon_w = int(icon.width * (icon_h / max(1, icon.height)))
+                icon_resized = icon.resize((icon_w, icon_h), Image.Resampling.LANCZOS)
+                im.paste(icon_resized, (16, (header_h - icon_h) // 2))
         except Exception:
             pass
 
     # Divider bar
-    draw.line([(60, 10), (60, 56)], fill=(160, 160, 160), width=2)
+    draw.line([(70, 12), (70, header_h - 12)], fill=(160, 160, 160), width=2)
 
-    # 3. Typography
-    try:
-        font_large = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 30)
-        font_sub = ImageFont.truetype("C:/Windows/Fonts/arialbd.ttf", 16)
-    except Exception:
-        font_large = font_sub = ImageFont.load_default()
+    # 3. Typography (Scalable for both Linux & Windows)
+    font_large = get_scalable_font(32, bold=True)
+    font_sub = get_scalable_font(18, bold=False)
 
     title_str = f"{total_cnt}" if not shop_cnt else f"{total_cnt} ({shop_cnt})"
     cat_names = {"skins": "Skins", "pickaxes": "Pickaxes", "dances": "Dances"}
     sub_str = cat_names.get(cat_type, cat_type.capitalize())
 
-    draw.text((72, 8), title_str, fill=(255, 255, 255), font=font_large)
-    draw.text((72, 42), sub_str, fill=(200, 200, 200), font=font_sub)
+    draw.text((84, 10), title_str, fill=(255, 255, 255), font=font_large)
+    draw.text((84, 46), sub_str, fill=(210, 210, 220), font=font_sub)
+
+    # 4. Cover bottom supplier timestamp / watermark with clean black bar and branding
+    footer_h = 32
+    draw.rectangle([0, im.height - footer_h, im.width, im.height], fill=(0, 0, 0))
+    store_name = config.get("store_name", "VENTO").upper()
+    footer_text = f"🛡️ {store_name} EXCLUSIVE LOCKER"
+    font_foot = get_scalable_font(14, bold=True)
+    draw.text((16, im.height - footer_h + 8), footer_text, fill=(150, 155, 175), font=font_foot)
 
     buf = io.BytesIO()
-    im.save(buf, format="JPEG", quality=88)
+    im.save(buf, format="JPEG", quality=95)
     out_val = buf.getvalue()
     im.close()
     buf.close()
@@ -658,11 +685,21 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
         # 3. Combine styled images side-by-side into a single showcase graphic
         combined_showcase_bytes = combine_styled_images_side_by_side(styled_images)
 
-        # 4. Public server post with single side-by-side showcase image
+        # 4. Public server post with high-definition locker images
         public_embed = create_account_embed(item, score, rare_detected, currency, is_dm=False, matched_targets=matched_targets)
         public_files = []
 
-        if combined_showcase_bytes:
+        if "skins" in styled_images and styled_images["skins"]:
+            public_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins.jpg"))
+            public_embed.set_image(url="attachment://1_skins.jpg")
+
+        if "pickaxes" in styled_images and styled_images["pickaxes"]:
+            public_files.append(discord.File(io.BytesIO(styled_images["pickaxes"]), filename="2_pickaxes.jpg"))
+
+        if "dances" in styled_images and styled_images["dances"]:
+            public_files.append(discord.File(io.BytesIO(styled_images["dances"]), filename="3_dances.jpg"))
+
+        if not public_files and combined_showcase_bytes:
             public_files.append(discord.File(io.BytesIO(combined_showcase_bytes), filename="locker_showcase.jpg"))
             public_embed.set_image(url="attachment://locker_showcase.jpg")
 
@@ -685,7 +722,17 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
                     dm_embed = create_account_embed(item, score, rare_detected, currency, is_dm=True, matched_targets=matched_targets)
                     dm_files = []
 
-                    if combined_showcase_bytes:
+                    if "skins" in styled_images and styled_images["skins"]:
+                        dm_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins_dm.jpg"))
+                        dm_embed.set_image(url="attachment://1_skins_dm.jpg")
+
+                    if "pickaxes" in styled_images and styled_images["pickaxes"]:
+                        dm_files.append(discord.File(io.BytesIO(styled_images["pickaxes"]), filename="2_pickaxes_dm.jpg"))
+
+                    if "dances" in styled_images and styled_images["dances"]:
+                        dm_files.append(discord.File(io.BytesIO(styled_images["dances"]), filename="3_dances_dm.jpg"))
+
+                    if not dm_files and combined_showcase_bytes:
                         dm_files.append(discord.File(io.BytesIO(combined_showcase_bytes), filename="locker_showcase_dm.jpg"))
                         dm_embed.set_image(url="attachment://locker_showcase_dm.jpg")
 
