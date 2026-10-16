@@ -1,6 +1,7 @@
 import os
 import sys
 import io
+import gc
 import asyncio
 import datetime
 from typing import Optional, List, Dict, Any
@@ -46,12 +47,18 @@ load_dotenv(dotenv_path=ENV_FILE)
 DISCORD_TOKEN = os.getenv("DISCORD_TOKEN", "")
 LZT_API_TOKEN = os.getenv("LZT_API_TOKEN", "")
 
-# Initialize Intents & Bot
+# Initialize Intents & Bot with low-memory profile for 256MB free hosts
 intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents, help_command=None)
+bot = commands.Bot(
+    command_prefix="!",
+    intents=intents,
+    help_command=None,
+    max_messages=50,
+    chunk_guilds_at_startup=False
+)
 lzt_client = LZTClient(api_token=LZT_API_TOKEN)
 config = load_config()
 
@@ -234,14 +241,23 @@ def restyle_category_image(
 ) -> bytes:
     """
     Restyles raw image into the clean Fortnite checker layout:
+    - Downscaled to max 750px height to save server RAM
     - Pure solid black background for header
     - Authentic white icon (shirt, pickaxe, dance) on top-left
     - Clean divider bar '|'
     - White bold count: '[total] ([shop])'
     - Category subtitle: 'Skins' / 'Pickaxes' / 'Dances'
-    - Eliminates any supplier text or dates completely
     """
     im = Image.open(io.BytesIO(im_bytes)).convert("RGB")
+    
+    # Downscale huge locker images to 750px max to prevent OOM
+    if im.height > 750:
+        ratio = 750.0 / im.height
+        new_w = max(1, int(im.width * ratio))
+        resized_im = im.resize((new_w, 750), Image.Resampling.BILINEAR)
+        im.close()
+        im = resized_im
+
     draw = ImageDraw.Draw(im)
 
     # 1. Fill top header area with pure black (0, 0, 0)
@@ -251,8 +267,11 @@ def restyle_category_image(
     # 2. Paste authentic icon
     icon_path = os.path.join(BASE_DIR, f"assets/icons/{cat_type}.png")
     if os.path.exists(icon_path):
-        icon = Image.open(icon_path)
-        im.paste(icon, (14, 12))
+        try:
+            with Image.open(icon_path) as icon:
+                im.paste(icon, (14, 12))
+        except Exception:
+            pass
 
     # Divider bar
     draw.line([(60, 10), (60, 56)], fill=(160, 160, 160), width=2)
@@ -272,13 +291,16 @@ def restyle_category_image(
     draw.text((72, 42), sub_str, fill=(200, 200, 200), font=font_sub)
 
     buf = io.BytesIO()
-    im.save(buf, format="JPEG", quality=95)
-    return buf.getvalue()
+    im.save(buf, format="JPEG", quality=88)
+    out_val = buf.getvalue()
+    im.close()
+    buf.close()
+    return out_val
 
 def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optional[bytes]:
     """
     Combines restyled category images (skins, pickaxes, dances) side-by-side
-    into a single horizontal showcase graphic so all categories appear together.
+    into a single horizontal showcase graphic with strict memory constraints for 256MB hosting.
     """
     order = ["skins", "pickaxes", "dances"]
     imgs = []
@@ -294,29 +316,39 @@ def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optio
 
     if len(imgs) == 1:
         buf = io.BytesIO()
-        imgs[0].save(buf, format="JPEG", quality=92)
-        return buf.getvalue()
+        imgs[0].save(buf, format="JPEG", quality=88)
+        out_b = buf.getvalue()
+        imgs[0].close()
+        buf.close()
+        return out_b
 
-    max_h = max(im.height for im in imgs)
+    # Clamp target height to 550px to ensure canvas uses less than 4MB RAM
+    target_h = min(550, max(im.height for im in imgs))
     resized = []
     for im in imgs:
-        if im.height != max_h:
-            new_w = max(1, int(im.width * (max_h / im.height)))
-            im = im.resize((new_w, max_h), Image.Resampling.LANCZOS)
-        resized.append(im)
+        ratio = target_h / max(1, im.height)
+        new_w = max(1, int(im.width * ratio))
+        resized.append(im.resize((new_w, target_h), Image.Resampling.BILINEAR))
+        im.close()
 
     gap = 12
     total_w = sum(im.width for im in resized) + gap * (len(resized) - 1)
-    canvas = Image.new("RGB", (total_w, max_h), (0, 0, 0))
+    canvas = Image.new("RGB", (total_w, target_h), (0, 0, 0))
 
     x = 0
     for im in resized:
         canvas.paste(im, (x, 0))
         x += im.width + gap
+        im.close()
 
     buf = io.BytesIO()
-    canvas.save(buf, format="JPEG", quality=90)
-    return buf.getvalue()
+    canvas.save(buf, format="JPEG", quality=88)
+    out_val = buf.getvalue()
+    canvas.close()
+    buf.close()
+    del imgs; del resized
+    gc.collect()
+    return out_val
 
 # OCR Verification for subscription proof screenshots
 def verify_proof_screenshot(image_bytes: bytes) -> Tuple[bool, str, str]:
@@ -481,11 +513,12 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
 
     items = []
     error = None
+    seen_ids = set(load_seen_accounts())
+    seen_t_ids = set()
 
-    # 1. If target items are specified, ALWAYS query LZT specifically for them first!
+    # 1. If target items are specified, query LZT specifically for them
     if target_items:
-        all_target_items = []
-        for target in target_items[:5]:
+        for target in target_items[:3]:
             t_items, t_err = await lzt_client.get_fortnite_accounts(
                 min_price=min_price,
                 max_price=max_price,
@@ -502,33 +535,13 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
             if t_err and not error:
                 error = t_err
             if t_items:
-                all_target_items.extend(t_items)
-
-            # When multiple targets are set (e.g. skin + pickaxe), also query without min_skins restriction so combination accounts are never missed
-            if (not t_items or len(target_items) > 1) and min_skins > 20:
-                more_items, _ = await lzt_client.get_fortnite_accounts(
-                    min_price=min_price,
-                    max_price=max_price,
-                    min_skins=0,
-                    max_skins=max_skins,
-                    min_vbucks=min_vbucks,
-                    psn_linkable="nomatter",
-                    xbox_linkable="nomatter",
-                    currency=currency,
-                    order_by=order_by,
-                    daybreak=int(config.get("daybreak", 0)),
-                    title=target
-                )
-                if more_items:
-                    all_target_items.extend(more_items)
-
-        # Deduplicate fetched items by item_id
-        seen_t_ids = set()
-        for it in all_target_items:
-            iid = it.get("item_id")
-            if iid and iid not in seen_t_ids:
-                seen_t_ids.add(iid)
-                items.append(it)
+                for it in t_items:
+                    iid = it.get("item_id")
+                    if iid and iid not in seen_ids and iid not in seen_t_ids:
+                        seen_t_ids.add(iid)
+                        items.append(it)
+                del t_items
+                gc.collect()
 
     # 2. General deals search (ONLY when user has NOT set any target items)
     if not target_items:
@@ -545,7 +558,12 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
             daybreak=int(config.get("daybreak", 0))
         )
         if g_items:
-            items.extend(g_items)
+            for it in g_items:
+                iid = it.get("item_id")
+                if iid and iid not in seen_ids:
+                    items.append(it)
+            del g_items
+            gc.collect()
         elif not error:
             error = g_err
 
@@ -557,25 +575,7 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
                 pass
         return 0
 
-    if not items:
-        if channel:
-            try:
-                if target_items:
-                    targets_str = ", ".join([f"`{t}`" for t in target_items])
-                    await channel.send(
-                        f"ℹ️ **نتيجة فحص السوق:**\n"
-                        f"لا يوجد أي حساب متوفر حالياً يحتوي على جميع طلباتك بالضبط:\n"
-                        f"🎯 **العناصر المطلوبة:** {targets_str}\n"
-                        f"*(سيستمر البوت بالبحث التلقائي وسينبهك فور توفر حساب يطابق طلبك كاملاً)*"
-                    )
-                elif is_manual:
-                    await channel.send("ℹ️ No accounts matching your filters were found at this time.")
-            except Exception:
-                pass
-        return 0
-
-    seen_ids = set(load_seen_accounts())
-    new_items = [it for it in items if it.get("item_id") not in seen_ids]
+    new_items = items
 
     if not new_items:
         if channel:
@@ -699,10 +699,14 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
 
         seen_ids.add(item_id)
         sent_count += 1
+        del images_dict; del styled_images; del combined_showcase_bytes
+        gc.collect()
         await asyncio.sleep(2) # Pause between posts
 
     # Save seen accounts
     save_seen_accounts(list(seen_ids))
+    del items; del scored_items; del new_items
+    gc.collect()
     return sent_count
 
 
