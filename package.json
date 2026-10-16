@@ -1,0 +1,12 @@
+{
+  "name": "ventobot",
+  "version": "1.0.0",
+  "description": "VentoBot Discord Store",
+  "main": "bot.py",
+  "scripts": {
+    "preinstall": "pip3 install -r requirements.txt || pip install -r requirements.txt || true",
+    "build": "pip3 install -r requirements.txt || pip install -r requirements.txt || true",
+    "start": "python3 bot.py || python bot.py"
+  },
+  "dependencies": {}
+}
