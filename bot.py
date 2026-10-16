@@ -321,11 +321,8 @@ def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optio
 # OCR Verification for subscription proof screenshots
 def verify_proof_screenshot(image_bytes: bytes) -> Tuple[bool, str, str]:
     """
-    Perform OCR on the image to verify that it actually contains
-    subscription or like proof text.
-    If OCR libraries are not installed on the hosting server, gracefully
-    fall back to trusting the image and relying on anti-cheat perceptual hashing.
-    Returns (is_valid, reason, detected_text)
+    Perform OCR on the image if possible to extract text tokens for anti-theft tracking.
+    Never rejects genuine users; always allows the proof to proceed to anti-cheat verification.
     """
     try:
         from rapidocr_onnxruntime import RapidOCR
@@ -337,35 +334,12 @@ def verify_proof_screenshot(image_bytes: bytes) -> Tuple[bool, str, str]:
         ocr = RapidOCR()
         result, _ = ocr(img_np)
         if not result:
-            return False, "No text detected in the image", ""
+            return True, "No text detected", ""
             
         full_text = " ".join([line[1].lower() for line in result])
-        
-        # Valid keywords for subscription / like proof (English & Arabic)
-        valid_keywords = [
-            "subscri", "subscribed", "subscriber", "subscribers", "subscription", "subbed",
-            "liked", "like", "likes",
-            "following", "follower", "followers", "follow",
-            "notifications", "bell",
-            "youtube", "tiktok", "twitch", "kick", "instagram", "twitter", "x.com",
-            "مشترك", "اشتراك", "مشتركون", "مشتركين", "تم الاشتراك", "الاشتراك", "الاشتراكات", "إلغاء الاشتراك",
-            "اعجاب", "إعجاب", "معجب", "لايك", "أعجبني", "اعجبني", "أعجبنى", "اعجبنى", "عجبني", "تسجيل الإعجاب",
-            "متابع", "متابعة", "متابعين", "يتابع", "أتابعه", "اتابعه", "أتابع", "اتابع", "أصدقاء", "اصدقاء",
-            "جرس", "الإشعارات", "الاشعارات", "يوتيوب", "تيك توك", "سبسكرايب", "فولو",
-            "abonné", "abonner", "suscrito", "suscribirse", "abone"
-        ]
-        
-        for kw in valid_keywords:
-            if kw in full_text:
-                return True, f"Found keyword: {kw}", full_text
-                
-        return False, "Image does not show subscription or like status", full_text
-    except ImportError:
-        # RapidOCR is not installed in this environment; fallback to accepting image and using anti-cheat
-        return True, "OCR module not installed, bypassed", ""
-    except Exception as e:
-        print(f"[Proof OCR] Error during OCR: {e}")
-        return True, f"OCR error bypassed: {e}", ""
+        return True, "OCR completed", full_text
+    except Exception:
+        return True, "OCR bypassed", ""
 
 # Helper function to create listing Embed
 def create_account_embed(
@@ -849,20 +823,8 @@ async def on_message(message: discord.Message):
         try:
             image_bytes = await image_att.read()
 
-            # 1. OCR Verification: Check if image contains actual proof text (Subscribe/Like)
-            is_valid, reason, detected_text = verify_proof_screenshot(image_bytes)
-            if not is_valid:
-                try:
-                    await message.add_reaction("❌")
-                except Exception:
-                    pass
-                await message.reply(
-                    f"❌ **Verification Failed!** {message.author.mention}\n"
-                    "The uploaded image does not appear to show a valid subscription or like screenshot.\n"
-                    "Please make sure the **'Subscribed'** or **'Liked'** button is clearly visible.",
-                    delete_after=15
-                )
-                return
+            # 1. OCR text extraction (for fingerprints & anti-theft)
+            _, _, detected_text = verify_proof_screenshot(image_bytes)
 
             # 2. Anti-Cheat: Check if the screenshot is a duplicate or cropped/stolen
             fingerprints = calculate_image_hashes(image_bytes, ocr_text=detected_text)
