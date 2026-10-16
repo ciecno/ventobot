@@ -794,6 +794,25 @@ async def on_ready():
     if config.get("is_running", True) and not tracker_task.is_running():
         tracker_task.start()
         print(f"Background tracker started (every {interval} minutes).")
+
+    # Start health check web server for Render / Cloud hosting
+    port = os.getenv("PORT")
+    if port:
+        try:
+            from aiohttp import web
+            app = web.Application()
+            async def health(request):
+                return web.Response(text="VentoBot is running 24/7!")
+            app.router.add_get("/", health)
+            app.router.add_get("/health", health)
+            runner = web.AppRunner(app)
+            await runner.setup()
+            site = web.TCPSite(runner, "0.0.0.0", int(port))
+            await site.start()
+            print(f"[Web] Health check server listening on port {port}")
+        except Exception as we:
+            print(f"[Web] Health check server notice: {we}")
+
     print("=" * 50)
 
 
