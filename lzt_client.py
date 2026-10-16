@@ -356,15 +356,15 @@ class LZTClient:
                 if dt > now:
                     future_days = (dt - now).days
                     if future_days == 0:
-                        return f"Later Today ({date_str})"
+                        return f"Today ({date_str})"
                     elif future_days == 1:
                         return f"Tomorrow ({date_str})"
                     elif future_days < 30:
-                        return f"in {future_days} days ({date_str})"
+                        return f"{date_str} ({future_days}d)"
                     elif future_days < 365:
-                        return f"in {max(1, future_days // 30)} months ({date_str})"
+                        return f"{date_str} ({max(1, future_days // 30)}mo)"
                     else:
-                        return f"in {max(1, future_days // 365)} years ({date_str})"
+                        return f"{date_str} ({max(1, future_days // 365)}y)"
 
                 # Past dates
                 delta = now - dt

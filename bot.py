@@ -455,36 +455,27 @@ def create_account_embed(
             color=color if matched_targets else 0xFFD700,
             timestamp=datetime.datetime.now()
         )
-        embed.add_field(
-            name="💵 Financial Overview",
-            value=(
-                f"• 🛒 **Supplier Price:** **{raw_price} {currency_symbol}**\n"
-                f"• 📈 **Resale Price:** **{resale_price} {currency_symbol}**\n"
-                f"• 💰 **Net Profit:** **+{profit_amount} {currency_symbol}**\n"
-                f"• 👤 **Supplier Seller:** `{seller}`"
-            ),
-            inline=True
-        )
-        embed.add_field(
-            name="🎮 Locker Highlights",
-            value=(
-                f"• 👕 **Total Skins:** **{skin_count} Skins**\n"
-                f"• 🪙 **V-Bucks:** **{details['vbucks']}**\n"
-                f"• 🕹️ **Main Platform:** **{details['platform']}**\n"
-                f"• 💎 **Save The World:** {details['stw_edition']}"
-            ),
-            inline=True
-        )
-        embed.add_field(
-            name="✉️ Security & Compatibility",
-            value=(
-                f"• 🟦 **PlayStation (PSN):** {details['psn_linkable']}   |   🟩 **Xbox Linkable:** {details['xbox_linkable']}\n"
-                f"• 📧 **Email Status:** {details['changeable_email']} (`{details['email_domain']}`)\n"
-                f"• 📅 **Created:** {details['register_date']}   |   🕒 **Last Active:** {details['last_activity']}\n"
-                f"• 🔗 **Linked Accounts:** {details['social_accounts']}"
-            ),
-            inline=False
-        )
+        embed.add_field(name="💵 Supplier Price", value=f"**{raw_price} {currency_symbol}**\n\u200b", inline=True)
+        embed.add_field(name="📈 Server Resale Price", value=f"**{resale_price} {currency_symbol}**\n\u200b", inline=True)
+        embed.add_field(name="💰 Net Profit", value=f"**+{profit_amount} {currency_symbol}**\n\u200b", inline=True)
+
+        embed.add_field(name="👤 Supplier Seller", value=f"`{seller}`\n\u200b", inline=True)
+        embed.add_field(name="👕 Total Skins", value=f"**{skin_count} Skins**\n\u200b", inline=True)
+        embed.add_field(name="🪙 V-Bucks", value=f"`{details['vbucks']}`\n\u200b", inline=True)
+
+        embed.add_field(name="💎 Save The World (STW)", value=f"`{details['stw_edition']}`\n\u200b", inline=True)
+        embed.add_field(name="🎮 Platform", value=f"`{details['platform']}`\n\u200b", inline=True)
+        embed.add_field(name="🟦 PlayStation (PSN)", value=f"`{details['psn_linkable']}`\n\u200b", inline=True)
+
+        embed.add_field(name="🟩 Xbox Linkable", value=f"`{details['xbox_linkable']}`\n\u200b", inline=True)
+        embed.add_field(name="✉️ Email Status", value=f"`{details['changeable_email']}`\n\u200b", inline=True)
+        embed.add_field(name="📧 Email Domain", value=f"`{details['email_domain']}`\n\u200b", inline=True)
+
+        embed.add_field(name="📅 Account Created", value=f"`{details['register_date']}`\n\u200b", inline=True)
+        embed.add_field(name="🕒 Last Active", value=f"`{details['last_activity']}`\n\u200b", inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+        embed.add_field(name="🔗 Linked Accounts", value=f"`{details['social_accounts']}`", inline=False)
         
         if matched_targets:
             embed.add_field(name="🎯 Target Items Detected", value=", ".join([f"`{t}`" for t in matched_targets]), inline=False)
@@ -500,40 +491,27 @@ def create_account_embed(
         fixed_title = config.get("fixed_account_title", "🎮 Fortnite Special Account")
         embed = discord.Embed(
             title=fixed_title,
-            description=f"**{rating_badge}**\nSpecial account available for instant purchase! To purchase or inquire, please open a ticket or contact staff.",
+            description=f"**{rating_badge}**\nSpecial account available for instant purchase! To purchase or inquire, please open a ticket or contact staff.\n\u200b",
             color=color,
             timestamp=datetime.datetime.now()
         )
-        embed.add_field(
-            name="💵 Account Pricing & Content",
-            value=(
-                f"• 💰 **Price:** **{resale_price} {currency_symbol}**\n"
-                f"• 👕 **Total Skins:** **{skin_count} Skins**\n"
-                f"• 🪙 **V-Bucks:** **{details['vbucks']}**"
-            ),
-            inline=True
-        )
-        embed.add_field(
-            name="🎮 Gaming & Platforms",
-            value=(
-                f"• 🕹️ **Main Platform:** **{details['platform']}**\n"
-                f"• 🟦 **PlayStation (PSN):** {details['psn_linkable']}\n"
-                f"• 🟩 **Xbox Linkable:** {details['xbox_linkable']}\n"
-                f"• 💎 **Save The World:** {details['stw_edition']}"
-            ),
-            inline=True
-        )
-        embed.add_field(
-            name="✉️ Security & Account History",
-            value=(
-                f"• 📧 **Email Status:** {details['changeable_email']}\n"
-                f"• 🌐 **Email Domain:** `{details['email_domain']}`\n"
-                f"• 📅 **Account Created:** {details['register_date']}\n"
-                f"• 🕒 **Last Active:** {details['last_activity']}\n"
-                f"• 🔗 **Linked Accounts:** {details['social_accounts']}"
-            ),
-            inline=False
-        )
+        embed.add_field(name="💰 Price", value=f"**{resale_price} {currency_symbol}**\n\u200b", inline=True)
+        embed.add_field(name="👕 Total Skins", value=f"**{skin_count} Skins**\n\u200b", inline=True)
+        embed.add_field(name="🪙 V-Bucks", value=f"`{details['vbucks']}`\n\u200b", inline=True)
+
+        embed.add_field(name="💎 Save The World (STW)", value=f"`{details['stw_edition']}`\n\u200b", inline=True)
+        embed.add_field(name="🎮 Platform", value=f"`{details['platform']}`\n\u200b", inline=True)
+        embed.add_field(name="🟦 PlayStation (PSN)", value=f"`{details['psn_linkable']}`\n\u200b", inline=True)
+
+        embed.add_field(name="🟩 Xbox Linkable", value=f"`{details['xbox_linkable']}`\n\u200b", inline=True)
+        embed.add_field(name="✉️ Email Status", value=f"`{details['changeable_email']}`\n\u200b", inline=True)
+        embed.add_field(name="📧 Email Domain", value=f"`{details['email_domain']}`\n\u200b", inline=True)
+
+        embed.add_field(name="📅 Account Created", value=f"`{details['register_date']}`\n\u200b", inline=True)
+        embed.add_field(name="🕒 Last Active", value=f"`{details['last_activity']}`\n\u200b", inline=True)
+        embed.add_field(name="\u200b", value="\u200b", inline=True)
+
+        embed.add_field(name="🔗 Linked Accounts", value=f"`{details['social_accounts']}`", inline=False)
 
         if matched_targets:
             embed.add_field(name="🎯 Featured Items", value=", ".join([f"`{t}`" for t in matched_targets]), inline=False)
