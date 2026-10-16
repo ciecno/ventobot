@@ -455,24 +455,36 @@ def create_account_embed(
             color=color if matched_targets else 0xFFD700,
             timestamp=datetime.datetime.now()
         )
-        embed.add_field(name="💵 Supplier Price", value=f"**{raw_price} {currency_symbol}**", inline=True)
-        embed.add_field(name="📈 Server Resale Price", value=f"**{resale_price} {currency_symbol}**", inline=True)
-        embed.add_field(name="💰 Net Profit", value=f"**+{profit_amount} {currency_symbol}**", inline=True)
-        embed.add_field(name="👤 Supplier Seller", value=f"`{seller}`", inline=True)
-        embed.add_field(name="👕 Total Skins", value=f"**{skin_count} Skins**", inline=True)
-        embed.add_field(name="🪙 V-Bucks", value=f"`{details['vbucks']}`", inline=True)
-        
-        embed.add_field(name="💎 Save The World (STW)", value=f"`{details['stw_edition']}`", inline=True)
-        embed.add_field(name="🎮 Platform", value=f"`{details['platform']}`", inline=True)
-        embed.add_field(name="🟦 PlayStation (PSN)", value=f"`{details['psn_linkable']}`", inline=True)
-        
-        embed.add_field(name="🟩 Xbox Linkable", value=f"`{details['xbox_linkable']}`", inline=True)
-        embed.add_field(name="✉️ Email Status", value=f"`{details['changeable_email']}`", inline=True)
-        embed.add_field(name="📧 Email Domain", value=f"`{details['email_domain']}`", inline=True)
-        
-        embed.add_field(name="📅 Account Created", value=f"`{details['register_date']}`", inline=True)
-        embed.add_field(name="🕒 Last Active", value=f"`{details['last_activity']}`", inline=True)
-        embed.add_field(name="🔗 Linked Accounts", value=f"`{details['social_accounts']}`", inline=False)
+        embed.add_field(
+            name="💵 Financial Overview",
+            value=(
+                f"• 🛒 **Supplier Price:** **{raw_price} {currency_symbol}**\n"
+                f"• 📈 **Resale Price:** **{resale_price} {currency_symbol}**\n"
+                f"• 💰 **Net Profit:** **+{profit_amount} {currency_symbol}**\n"
+                f"• 👤 **Supplier Seller:** `{seller}`"
+            ),
+            inline=True
+        )
+        embed.add_field(
+            name="🎮 Locker Highlights",
+            value=(
+                f"• 👕 **Total Skins:** **{skin_count} Skins**\n"
+                f"• 🪙 **V-Bucks:** **{details['vbucks']}**\n"
+                f"• 🕹️ **Main Platform:** **{details['platform']}**\n"
+                f"• 💎 **Save The World:** {details['stw_edition']}"
+            ),
+            inline=True
+        )
+        embed.add_field(
+            name="✉️ Security & Compatibility",
+            value=(
+                f"• 🟦 **PlayStation (PSN):** {details['psn_linkable']}   |   🟩 **Xbox Linkable:** {details['xbox_linkable']}\n"
+                f"• 📧 **Email Status:** {details['changeable_email']} (`{details['email_domain']}`)\n"
+                f"• 📅 **Created:** {details['register_date']}   |   🕒 **Last Active:** {details['last_activity']}\n"
+                f"• 🔗 **Linked Accounts:** {details['social_accounts']}"
+            ),
+            inline=False
+        )
         
         if matched_targets:
             embed.add_field(name="🎯 Target Items Detected", value=", ".join([f"`{t}`" for t in matched_targets]), inline=False)
@@ -492,21 +504,36 @@ def create_account_embed(
             color=color,
             timestamp=datetime.datetime.now()
         )
-        embed.add_field(name="💰 Price", value=f"**{resale_price} {currency_symbol}**", inline=True)
-        embed.add_field(name="👕 Total Skins", value=f"**{skin_count} Skins**", inline=True)
-        embed.add_field(name="🪙 V-Bucks", value=f"`{details['vbucks']}`", inline=True)
-        
-        embed.add_field(name="💎 Save The World (STW)", value=f"`{details['stw_edition']}`", inline=True)
-        embed.add_field(name="🎮 Platform", value=f"`{details['platform']}`", inline=True)
-        embed.add_field(name="🟦 PlayStation (PSN)", value=f"`{details['psn_linkable']}`", inline=True)
-        
-        embed.add_field(name="🟩 Xbox Linkable", value=f"`{details['xbox_linkable']}`", inline=True)
-        embed.add_field(name="✉️ Email Status", value=f"`{details['changeable_email']}`", inline=True)
-        embed.add_field(name="📧 Email Domain", value=f"`{details['email_domain']}`", inline=True)
-        
-        embed.add_field(name="📅 Account Created", value=f"`{details['register_date']}`", inline=True)
-        embed.add_field(name="🕒 Last Active", value=f"`{details['last_activity']}`", inline=True)
-        embed.add_field(name="🔗 Linked Accounts", value=f"`{details['social_accounts']}`", inline=False)
+        embed.add_field(
+            name="💵 Account Pricing & Content",
+            value=(
+                f"• 💰 **Price:** **{resale_price} {currency_symbol}**\n"
+                f"• 👕 **Total Skins:** **{skin_count} Skins**\n"
+                f"• 🪙 **V-Bucks:** **{details['vbucks']}**"
+            ),
+            inline=True
+        )
+        embed.add_field(
+            name="🎮 Gaming & Platforms",
+            value=(
+                f"• 🕹️ **Main Platform:** **{details['platform']}**\n"
+                f"• 🟦 **PlayStation (PSN):** {details['psn_linkable']}\n"
+                f"• 🟩 **Xbox Linkable:** {details['xbox_linkable']}\n"
+                f"• 💎 **Save The World:** {details['stw_edition']}"
+            ),
+            inline=True
+        )
+        embed.add_field(
+            name="✉️ Security & Account History",
+            value=(
+                f"• 📧 **Email Status:** {details['changeable_email']}\n"
+                f"• 🌐 **Email Domain:** `{details['email_domain']}`\n"
+                f"• 📅 **Account Created:** {details['register_date']}\n"
+                f"• 🕒 **Last Active:** {details['last_activity']}\n"
+                f"• 🔗 **Linked Accounts:** {details['social_accounts']}"
+            ),
+            inline=False
+        )
 
         if matched_targets:
             embed.add_field(name="🎯 Featured Items", value=", ".join([f"`{t}`" for t in matched_targets]), inline=False)
@@ -823,13 +850,23 @@ async def on_ready():
         except Exception as e:
             print(f"Failed to sync slash commands: {e}")
 
-    # Set Activity
-    interval = config.get("interval_minutes", 30)
+    # Set Bio and Activity
+    bio_text = "https://discord.gg/veSs3Dmm97\nDEV: 0zvf"
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
+            await session.patch(
+                "https://discord.com/api/v10/applications/@me",
+                headers=h,
+                json={"description": bio_text}
+            )
+            print("[Bio] Bot application description updated successfully.")
+    except Exception as e:
+        print(f"[Bio Update] Notice: {e}")
+
     await bot.change_presence(
-        activity=discord.Activity(
-            type=discord.ActivityType.watching,
-            name=f"Fortnite deals every {interval}m 🔍"
-        )
+        activity=discord.CustomActivity(name="discord.gg/veSs3Dmm97 | DEV: 0zvf")
     )
 
     # Start loop with saved interval
@@ -991,33 +1028,47 @@ def build_panel_embed() -> discord.Embed:
         color=0x5865F2,
         timestamp=datetime.datetime.now()
     )
-    embed.add_field(name="Supplier Tracker Status", value=status_str, inline=True)
-    embed.add_field(name="Check Interval", value=f"Every **{config.get('interval_minutes', 30)}** mins", inline=True)
-    embed.add_field(name="Deals Channel", value=channel_mention, inline=True)
-    
-    embed.add_field(name="💰 Added Server Profit", value=f"**+{profit_amt} {curr_symbol}**", inline=True)
-    embed.add_field(name="🔒 Private DMs Delivery", value="Authorized Owners Only (`recipients.txt`)", inline=True)
-    embed.add_field(name="Supplier API Token", value=has_token, inline=True)
-    
-    embed.add_field(name="Price Range", value=f"{config.get('min_price')}{curr_symbol} - {config.get('max_price')}{curr_symbol}", inline=True)
-    embed.add_field(name="Min Skins", value=f"{config.get('min_skins')} Skins", inline=True)
-    embed.add_field(name="🎮 PlayStation (PSN)", value=psn_text, inline=True)
-    
-    daybreak_val = config.get("daybreak", 0)
-    daybreak_str = f"Inactive for **{daybreak_val}+ days** ⏳" if daybreak_val > 0 else "All (No minimum) 🌐"
-    embed.add_field(name="⏳ Inactivity Filter", value=daybreak_str, inline=True)
-    embed.add_field(name="📸 Proof Channel", value=proof_channel_mention, inline=True)
-    embed.add_field(name="🎖️ Subscriber Role", value=proof_role_mention, inline=True)
-    embed.add_field(name="🛡️ Verified Proofs", value=f"{seen_images_count} images", inline=True)
+
+    embed.add_field(
+        name="📡 Automation & Delivery",
+        value=(
+            f"• **Tracker Status:** {status_str}\n"
+            f"• **Check Interval:** Every **{config.get('interval_minutes', 30)}** mins\n"
+            f"• **Deals Channel:** {channel_mention}\n"
+            f"• **Supplier Token:** {has_token}\n"
+            f"• **Private DMs:** Authorized Owners Only (`recipients.txt`)"
+        ),
+        inline=True
+    )
+
+    embed.add_field(
+        name="🎯 Market Filters & Pricing",
+        value=(
+            f"• **Price Range:** `{config.get('min_price')}{curr_symbol} - {config.get('max_price')}{curr_symbol}`\n"
+            f"• **Added Profit:** **+{profit_amt} {curr_symbol}**\n"
+            f"• **Min Skins:** **{config.get('min_skins')}** Skins\n"
+            f"• **PlayStation (PSN):** {psn_text}\n"
+            f"• **Inactivity Filter:** {daybreak_str}"
+        ),
+        inline=True
+    )
 
     target_items = config.get("target_items", [])
     filter_by_target = config.get("filter_by_target", False)
     target_str = ", ".join(target_items) if target_items else "None (General search)"
     target_mode_str = "Strict Target Match Only 🎯" if filter_by_target else "General (Highlight matches) 🌐"
 
-    embed.add_field(name="🎯 Target Items", value=f"`{target_str[:80]}`", inline=True)
-    embed.add_field(name="⚙️ Target Filter Mode", value=target_mode_str, inline=True)
-    embed.add_field(name="🎨 Graphics Branding", value=f"**{config.get('store_name', 'VENTO')}**", inline=True)
+    embed.add_field(
+        name="🛡️ Verification & Store Settings",
+        value=(
+            f"• **Proof Channel:** {proof_channel_mention}\n"
+            f"• **Subscriber Role:** {proof_role_mention}\n"
+            f"• **Verified Proofs:** **{seen_images_count}** images recorded\n"
+            f"• **Target Items:** `{target_str[:80]}` (Mode: **{target_mode_str}**)\n"
+            f"• **Store Branding:** **{config.get('store_name', 'VENTO')}**"
+        ),
+        inline=False
+    )
 
     embed.set_footer(text="Private Control Panel • Authorized Owners Only")
     return embed
@@ -2521,23 +2572,52 @@ async def cmd_verify_all(ctx: commands.Context):
 
 @bot.command(name="help")
 async def cmd_help(ctx: commands.Context):
-    await ctx.send(
-        "📖 **Fortnite Bot Commands Guide:**\n"
-        "• `!panel` : Open interactive control panel (Owners Only).\n"
-        "• `!inactivity <days>` : Filter by account inactivity in days (e.g. `!inactivity 30`).\n"
-        "• `!targets <skins>` : Set target items/skins (e.g. `!targets Travis Scott, Minty`).\n"
-        "• `!toggle_targets` : Switch between target-only filter and general search.\n"
-        "• `!clear_targets` : Clear target items.\n"
-        "• `!check` : Immediate market scan.\n"
-        "• `!profit <amount>` : Set added profit margin.\n"
-        "• `!channel` : Set current channel for deals announcements.\n"
-        "• `!interval <minutes>` : Set scan interval (e.g. 15, 30, 60 mins).\n"
-        "• `!start` / `!stop` : Start or pause automatic scanner.\n"
-        "• `!proof_channel` : Set proof verification channel.\n"
-        "• `!proof_role @role` : Set automatic subscriber role.\n"
-        "• `!status` : View current configuration.\n"
-        "• Or use slash commands: `/panel`, `/set_inactivity`, `/status`, `/help`, etc."
+    embed = discord.Embed(
+        title="📖 Fortnite Bot Commands Guide",
+        description="Comprehensive guide for configuring deals, filters, automation, and verification.",
+        color=0x5865F2
     )
+    embed.add_field(
+        name="🎛️ Control & Dashboard",
+        value=(
+            "• `!panel` — Open interactive control panel (Owners)\n"
+            "• `!status` — View current bot configuration\n"
+            "• `!check` — Trigger an immediate market scan\n"
+            "• `!start` / `!stop` — Resume or pause background scanner"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="🎯 Market & Target Filters",
+        value=(
+            "• `!targets <items>` — Set target items (e.g. `!targets Travis Scott, Minty`)\n"
+            "• `!toggle_targets` — Switch between target-only and general search\n"
+            "• `!clear_targets` — Clear all target items\n"
+            "• `!inactivity <days>` — Filter by account inactivity (e.g. `!inactivity 30`)"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="⚙️ Store & Channel Settings",
+        value=(
+            "• `!channel` — Set current channel for announcements\n"
+            "• `!profit <amount>` — Set added profit margin\n"
+            "• `!interval <mins>` — Set scan interval (e.g. 15, 30, 60)\n"
+            "• `!branding <name>` — Set watermark/store brand name"
+        ),
+        inline=False
+    )
+    embed.add_field(
+        name="📸 Proof Verification",
+        value=(
+            "• `!proof_channel` — Set proof verification channel\n"
+            "• `!proof_role @role` — Set automatic subscriber role\n"
+            "• `!verify_all` — Verify past proofs and grant roles"
+        ),
+        inline=False
+    )
+    embed.set_footer(text="All commands are also available as Slash Commands (e.g. /panel, /status, /help)")
+    await ctx.send(embed=embed)
 
 @bot.event
 async def on_command_error(ctx: commands.Context, error: Exception):

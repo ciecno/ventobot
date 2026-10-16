@@ -351,9 +351,24 @@ class LZTClient:
                     ts /= 1000.0
                 dt = datetime.datetime.fromtimestamp(ts)
                 now = datetime.datetime.now()
+                date_str = dt.strftime("%Y-%m-%d")
+
+                if dt > now:
+                    future_days = (dt - now).days
+                    if future_days == 0:
+                        return f"Later Today ({date_str})"
+                    elif future_days == 1:
+                        return f"Tomorrow ({date_str})"
+                    elif future_days < 30:
+                        return f"in {future_days} days ({date_str})"
+                    elif future_days < 365:
+                        return f"in {max(1, future_days // 30)} months ({date_str})"
+                    else:
+                        return f"in {max(1, future_days // 365)} years ({date_str})"
+
+                # Past dates
                 delta = now - dt
                 days = delta.days
-                date_str = dt.strftime("%Y-%m-%d")
                 if days == 0:
                     return f"Today ({date_str})"
                 elif days == 1:
