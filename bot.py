@@ -827,55 +827,8 @@ async def on_ready():
     print("=" * 50)
     print(f"Logged in as: {bot.user.name} (ID: {bot.user.id})")
     print(f"Connected to Discord successfully at {get_current_time_str()}!")
-    
-    # Register persistent view so buttons work across restarts
-    try:
-        bot.add_view(ControlPanelView())
-    except Exception as e:
-        print(f"Failed to register ControlPanelView: {e}")
 
-    # Sync Slash Commands (once on startup) - instantly copy to all guilds for zero propagation delay
-    if not getattr(bot, "_has_synced", False):
-        try:
-            for g in bot.guilds:
-                try:
-                    bot.tree.copy_global_to(guild=g)
-                    await bot.tree.sync(guild=g)
-                    print(f"Instantly synced slash commands to guild: {g.name} ({g.id})")
-                except Exception as ge:
-                    print(f"Guild sync notice for {g.id}: {ge}")
-            synced = await bot.tree.sync()
-            bot._has_synced = True
-            print(f"Synced {len(synced)} global application (slash) commands.")
-        except Exception as e:
-            print(f"Failed to sync slash commands: {e}")
-
-    # Set Bio and Activity
-    bio_text = "https://discord.gg/veSs3Dmm97\nDEV: 0zvf"
-    try:
-        import aiohttp
-        async with aiohttp.ClientSession() as session:
-            h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
-            await session.patch(
-                "https://discord.com/api/v10/applications/@me",
-                headers=h,
-                json={"description": bio_text}
-            )
-            print("[Bio] Bot application description updated successfully.")
-    except Exception as e:
-        print(f"[Bio Update] Notice: {e}")
-
-    await bot.change_presence(
-        activity=discord.CustomActivity(name="discord.gg/veSs3Dmm97 | DEV: 0zvf")
-    )
-
-    # Start loop with saved interval
-    tracker_task.change_interval(minutes=interval)
-    if config.get("is_running", True) and not tracker_task.is_running():
-        tracker_task.start()
-        print(f"Background tracker started (every {interval} minutes).")
-
-    # Start health check web server for Render / Cloud hosting
+    # 1. Start health check web server immediately for Render / Cloud hosting
     port = os.getenv("PORT")
     if port:
         try:
@@ -892,6 +845,59 @@ async def on_ready():
             print(f"[Web] Health check server listening on port {port}")
         except Exception as we:
             print(f"[Web] Health check server notice: {we}")
+    
+    # 2. Register persistent view so buttons work across restarts
+    try:
+        bot.add_view(ControlPanelView())
+    except Exception as e:
+        print(f"Failed to register ControlPanelView: {e}")
+
+    # 3. Sync Slash Commands (once on startup)
+    if not getattr(bot, "_has_synced", False):
+        try:
+            for g in bot.guilds:
+                try:
+                    bot.tree.copy_global_to(guild=g)
+                    await bot.tree.sync(guild=g)
+                except Exception:
+                    pass
+            synced = await bot.tree.sync()
+            bot._has_synced = True
+            print(f"Synced {len(synced)} global application commands.")
+        except Exception as e:
+            print(f"Slash sync notice: {e}")
+
+    # 4. Set Bio and Activity
+    bio_text = "https://discord.gg/veSs3Dmm97\nDEV: 0zvf"
+    try:
+        import aiohttp
+        async with aiohttp.ClientSession() as session:
+            h = {"Authorization": f"Bot {DISCORD_TOKEN}", "Content-Type": "application/json"}
+            await session.patch(
+                "https://discord.com/api/v10/applications/@me",
+                headers=h,
+                json={"description": bio_text}
+            )
+            print("[Bio] Bot application description updated successfully.")
+    except Exception as e:
+        print(f"[Bio Update] Notice: {e}")
+
+    try:
+        await bot.change_presence(
+            activity=discord.CustomActivity(name="discord.gg/veSs3Dmm97 | DEV: 0zvf")
+        )
+    except Exception as pe:
+        print(f"[Presence] Notice: {pe}")
+
+    # 5. Start background tracker loop
+    interval = int(config.get("interval_minutes", 30))
+    try:
+        tracker_task.change_interval(minutes=interval)
+        if config.get("is_running", True) and not tracker_task.is_running():
+            tracker_task.start()
+            print(f"Background tracker started (every {interval} minutes).")
+    except Exception as te:
+        print(f"[Tracker Start] Notice: {te}")
 
     print("=" * 50)
 
