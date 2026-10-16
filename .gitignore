@@ -1,0 +1,19 @@
+# Environment variables & secrets (CRUCIAL: Do not expose tokens)
+.env
+
+# Python cache & virtual environment
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+
+# Scratch & temporary test files
+scratch/
+
+# IDE & OS files
+.vscode/
+.idea/
+Thumbs.db
+Desktop.ini

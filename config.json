@@ -1,0 +1,52 @@
+{
+    "channel_id": null,
+    "interval_minutes": 30,
+    "is_running": false,
+    "currency": "usd",
+    "min_skins": 200,
+    "max_skins": 0,
+    "max_price": 40.0,
+    "min_price": 1,
+    "min_vbucks": 0,
+    "psn_linkable": "nomatter",
+    "xbox_linkable": "nomatter",
+    "order_by": "price_to_up",
+    "rare_keywords": [
+        "Travis Scott",
+        "Renegade Raider",
+        "Black Knight",
+        "Ikonik",
+        "Galaxy",
+        "Wonder",
+        "Wildcat",
+        "OG Ghoul",
+        "OG Skull",
+        "Aerial Assault",
+        "Scenario",
+        "Minty",
+        "Leviathan",
+        "Floss",
+        "Take The L",
+        "Honor Guard",
+        "Stealth Reflex",
+        "Glow",
+        "Neo Versa"
+    ],
+    "proof_channel_id": 1453141147529777232,
+    "proof_role_id": 1453130817973780620,
+    "profit_amount": 10.0,
+    "owner_id": 407568388324589579,
+    "dm_recipients": [
+        407568388324589579,
+        1322676395893067859
+    ],
+    "target_items": [
+        "Travis Scott",
+        "Leviathan Axe",
+        "Black Knight"
+    ],
+    "filter_by_target": true,
+    "daybreak": 0,
+    "store_name": "VENTO",
+    "fixed_account_title": "🎮 Fortnite Special Account"
+}
