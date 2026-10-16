@@ -1028,6 +1028,9 @@ def build_panel_embed() -> discord.Embed:
     elif config.get("psn_linkable") == "no":
         psn_text = "Not PSN Linkable ❌"
 
+    daybreak_val = config.get("daybreak", 0)
+    daybreak_str = f"Inactive for **{daybreak_val}+ days** ⏳" if daybreak_val > 0 else "All (No minimum) 🌐"
+
     embed = discord.Embed(
         title="🎛️ Fortnite Bot Control Panel",
         description="Private control panel for managing deals, filters, and automation.",
@@ -2548,10 +2551,6 @@ async def cmd_status(ctx: commands.Context):
 @commands.has_permissions(administrator=True)
 async def cmd_panel(ctx: commands.Context):
     """Open Interactive Control Panel."""
-    try:
-        await ctx.message.delete()
-    except Exception:
-        pass
     embed = build_panel_embed()
     view = ControlPanelView()
     await ctx.send(embed=embed, view=view)
