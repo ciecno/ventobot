@@ -177,6 +177,11 @@ def load_config() -> Dict[str, Any]:
             for key, val in DEFAULT_CONFIG.items():
                 if key not in data:
                     data[key] = val
+            if os.getenv("CHANNEL_ID"):
+                try:
+                    data["channel_id"] = int(os.getenv("CHANNEL_ID"))
+                except Exception:
+                    pass
             return data
     except Exception as e:
         print(f"[Config] Error loading config, using defaults: {e}")

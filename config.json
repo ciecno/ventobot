@@ -1,11 +1,11 @@
 {
     "channel_id": null,
     "interval_minutes": 30,
-    "is_running": false,
+    "is_running": true,
     "currency": "usd",
-    "min_skins": 200,
+    "min_skins": 20,
     "max_skins": 0,
-    "max_price": 40.0,
+    "max_price": 50.0,
     "min_price": 1,
     "min_vbucks": 0,
     "psn_linkable": "nomatter",
@@ -40,12 +40,8 @@
         407568388324589579,
         1322676395893067859
     ],
-    "target_items": [
-        "Travis Scott",
-        "Leviathan Axe",
-        "Black Knight"
-    ],
-    "filter_by_target": true,
+    "target_items": [],
+    "filter_by_target": false,
     "daybreak": 0,
     "store_name": "VENTO",
     "fixed_account_title": "🎮 Fortnite Special Account"
