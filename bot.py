@@ -233,8 +233,16 @@ def create_locker_collage(
     canvas.save(buf, format="JPEG", quality=92)
     return buf.getvalue()
 
-def get_scalable_font(size: int, bold: bool = True):
+def get_scalable_font(size: int = 24, bold: bool = True):
     """Load a scalable TrueType font with fallbacks for both Windows and Linux (Render)."""
+    font_file = "font_bold.ttf" if bold else "font_regular.ttf"
+    local_bundled = os.path.join(BASE_DIR, "assets", "fonts", font_file)
+    if os.path.exists(local_bundled):
+        try:
+            return ImageFont.truetype(local_bundled, size)
+        except Exception:
+            pass
+
     candidates = [
         "C:/Windows/Fonts/arialbd.ttf" if bold else "C:/Windows/Fonts/arial.ttf",
         "C:/Windows/Fonts/segoeuib.ttf" if bold else "C:/Windows/Fonts/segoeui.ttf",
@@ -299,7 +307,7 @@ def restyle_category_image(
     draw.line([(70, 12), (70, header_h - 12)], fill=(160, 160, 160), width=2)
 
     # 3. Typography (Scalable for both Linux & Windows)
-    font_large = get_scalable_font(32, bold=True)
+    font_large = get_scalable_font(34, bold=True)
     font_sub = get_scalable_font(18, bold=False)
 
     title_str = f"{total_cnt}" if not shop_cnt else f"{total_cnt} ({shop_cnt})"
@@ -327,7 +335,7 @@ def restyle_category_image(
 def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optional[bytes]:
     """
     Combines restyled category images (skins, pickaxes, dances) side-by-side
-    into a single horizontal showcase graphic with strict memory constraints for 256MB hosting.
+    into a single high-definition horizontal showcase graphic.
     """
     order = ["skins", "pickaxes", "dances"]
     imgs = []
@@ -343,24 +351,26 @@ def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optio
 
     if len(imgs) == 1:
         buf = io.BytesIO()
-        imgs[0].save(buf, format="JPEG", quality=88)
+        imgs[0].save(buf, format="JPEG", quality=92)
         out_b = buf.getvalue()
         imgs[0].close()
         buf.close()
         return out_b
 
-    # Clamp target height to 550px to ensure canvas uses less than 4MB RAM
-    target_h = min(550, max(im.height for im in imgs))
+    # Target height for crisp, readable Discord display (HD resolution, up to 1050px)
+    max_orig_h = max(im.height for im in imgs)
+    target_h = min(1050, max_orig_h)
+
     resized = []
     for im in imgs:
         ratio = target_h / max(1, im.height)
         new_w = max(1, int(im.width * ratio))
-        resized.append(im.resize((new_w, target_h), Image.Resampling.BILINEAR))
+        resized.append(im.resize((new_w, target_h), Image.Resampling.LANCZOS))
         im.close()
 
-    gap = 12
+    gap = 8
     total_w = sum(im.width for im in resized) + gap * (len(resized) - 1)
-    canvas = Image.new("RGB", (total_w, target_h), (0, 0, 0))
+    canvas = Image.new("RGB", (total_w, target_h), (14, 14, 18))
 
     x = 0
     for im in resized:
@@ -369,7 +379,7 @@ def combine_styled_images_side_by_side(styled_images: Dict[str, bytes]) -> Optio
         im.close()
 
     buf = io.BytesIO()
-    canvas.save(buf, format="JPEG", quality=88)
+    canvas.save(buf, format="JPEG", quality=92, subsampling=0)
     out_val = buf.getvalue()
     canvas.close()
     buf.close()
@@ -685,23 +695,16 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
         # 3. Combine styled images side-by-side into a single showcase graphic
         combined_showcase_bytes = combine_styled_images_side_by_side(styled_images)
 
-        # 4. Public server post with high-definition locker images
+        # 4. Public server post with high-definition side-by-side locker showcase
         public_embed = create_account_embed(item, score, rare_detected, currency, is_dm=False, matched_targets=matched_targets)
         public_files = []
 
-        if "skins" in styled_images and styled_images["skins"]:
-            public_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins.jpg"))
-            public_embed.set_image(url="attachment://1_skins.jpg")
-
-        if "pickaxes" in styled_images and styled_images["pickaxes"]:
-            public_files.append(discord.File(io.BytesIO(styled_images["pickaxes"]), filename="2_pickaxes.jpg"))
-
-        if "dances" in styled_images and styled_images["dances"]:
-            public_files.append(discord.File(io.BytesIO(styled_images["dances"]), filename="3_dances.jpg"))
-
-        if not public_files and combined_showcase_bytes:
+        if combined_showcase_bytes:
             public_files.append(discord.File(io.BytesIO(combined_showcase_bytes), filename="locker_showcase.jpg"))
             public_embed.set_image(url="attachment://locker_showcase.jpg")
+        elif "skins" in styled_images and styled_images["skins"]:
+            public_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins.jpg"))
+            public_embed.set_image(url="attachment://1_skins.jpg")
 
         # Send to public server channel (without seller name, with increased price)
         if channel:
@@ -722,19 +725,12 @@ async def check_and_alert_accounts(channel: discord.abc.Messageable, is_manual: 
                     dm_embed = create_account_embed(item, score, rare_detected, currency, is_dm=True, matched_targets=matched_targets)
                     dm_files = []
 
-                    if "skins" in styled_images and styled_images["skins"]:
-                        dm_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins_dm.jpg"))
-                        dm_embed.set_image(url="attachment://1_skins_dm.jpg")
-
-                    if "pickaxes" in styled_images and styled_images["pickaxes"]:
-                        dm_files.append(discord.File(io.BytesIO(styled_images["pickaxes"]), filename="2_pickaxes_dm.jpg"))
-
-                    if "dances" in styled_images and styled_images["dances"]:
-                        dm_files.append(discord.File(io.BytesIO(styled_images["dances"]), filename="3_dances_dm.jpg"))
-
-                    if not dm_files and combined_showcase_bytes:
+                    if combined_showcase_bytes:
                         dm_files.append(discord.File(io.BytesIO(combined_showcase_bytes), filename="locker_showcase_dm.jpg"))
                         dm_embed.set_image(url="attachment://locker_showcase_dm.jpg")
+                    elif "skins" in styled_images and styled_images["skins"]:
+                        dm_files.append(discord.File(io.BytesIO(styled_images["skins"]), filename="1_skins_dm.jpg"))
+                        dm_embed.set_image(url="attachment://1_skins_dm.jpg")
 
                     dm_view = AccountLinkView(item_id)
                     if dm_files:
