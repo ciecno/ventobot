@@ -269,66 +269,78 @@ def restyle_category_image(
 ) -> bytes:
     """
     Restyles raw image into a high-definition, crystal-clear Fortnite locker layout:
-    - Maintains crisp native HD resolution (no aggressive downscaling)
-    - Solid black header with large, bold typography (Linux & Windows compatible)
-    - Authentic white icon (shirt, pickaxe, dance) on top-left
-    - Clean divider bar '|'
-    - Covers bottom supplier watermark & timestamp completely with store branding
+    - Physically slices off old supplier header and supplier timestamp
+    - Builds a clean pure black canvas with dedicated header and footer
+    - Solid black header with authentic white icon, divider bar '|', and bold count
+    - Clean footer with store branding, 100% free of supplier watermarks
     """
     im = Image.open(io.BytesIO(im_bytes)).convert("RGB")
-    
-    # Cap max height at 1500px for sharp HD viewing without excessive memory
-    if im.height > 1500:
-        ratio = 1500.0 / im.height
-        new_w = max(1, int(im.width * ratio))
-        resized_im = im.resize((new_w, 1500), Image.Resampling.LANCZOS)
-        im.close()
-        im = resized_im
 
-    draw = ImageDraw.Draw(im)
+    # Dynamically scale crop margins based on image resolution (baseline: 1600px width)
+    scale = im.width / 1600.0
+    top_crop = max(45, int(70 * scale))
+    bottom_crop = max(35, int(45 * scale))
 
-    # 1. Fill top header area with pure black (0, 0, 0)
-    header_h = 76
-    draw.rectangle([0, 0, im.width, header_h], fill=(0, 0, 0))
+    if im.height > (top_crop + bottom_crop + 100):
+        body = im.crop((0, top_crop, im.width, im.height - bottom_crop))
+    else:
+        body = im.copy()
+    im.close()
 
-    # 2. Paste authentic category icon
+    header_h = max(60, int(80 * scale))
+    footer_h = max(32, int(42 * scale))
+    panel_w = body.width
+    panel_h = header_h + body.height + footer_h
+
+    panel = Image.new("RGB", (panel_w, panel_h), (0, 0, 0))
+    panel.paste(body, (0, header_h))
+    body.close()
+
+    draw = ImageDraw.Draw(panel)
+
+    # 1. Authentic category icon
     icon_path = os.path.join(BASE_DIR, f"assets/icons/{cat_type}.png")
+    icon_w_drawn = 0
     if os.path.exists(icon_path):
         try:
             with Image.open(icon_path) as icon:
-                icon_h = min(48, icon.height)
-                icon_w = int(icon.width * (icon_h / max(1, icon.height)))
-                icon_resized = icon.resize((icon_w, icon_h), Image.Resampling.LANCZOS)
-                im.paste(icon_resized, (16, (header_h - icon_h) // 2))
+                target_icon_h = int(header_h * 0.6)
+                target_icon_w = int(icon.width * (target_icon_h / max(1, icon.height)))
+                icon_resized = icon.resize((target_icon_w, target_icon_h), Image.Resampling.LANCZOS)
+                panel.paste(icon_resized, (int(18 * scale), (header_h - target_icon_h) // 2))
+                icon_w_drawn = target_icon_w
         except Exception:
             pass
 
-    # Divider bar
-    draw.line([(70, 12), (70, header_h - 12)], fill=(160, 160, 160), width=2)
+    # 2. Divider bar '|'
+    divider_x = int(18 * scale) + icon_w_drawn + int(14 * scale) if icon_w_drawn else int(24 * scale)
+    draw.line([(divider_x, int(14 * scale)), (divider_x, header_h - int(14 * scale))], fill=(160, 160, 160), width=max(2, int(2 * scale)))
 
     # 3. Typography (Scalable for both Linux & Windows)
-    font_large = get_scalable_font(34, bold=True)
-    font_sub = get_scalable_font(18, bold=False)
+    title_font_size = max(22, int(36 * scale))
+    sub_font_size = max(13, int(18 * scale))
+    font_large = get_scalable_font(title_font_size, bold=True)
+    font_sub = get_scalable_font(sub_font_size, bold=False)
 
     title_str = f"{total_cnt}" if not shop_cnt else f"{total_cnt} ({shop_cnt})"
     cat_names = {"skins": "Skins", "pickaxes": "Pickaxes", "dances": "Dances"}
     sub_str = cat_names.get(cat_type, cat_type.capitalize())
 
-    draw.text((84, 10), title_str, fill=(255, 255, 255), font=font_large)
-    draw.text((84, 46), sub_str, fill=(210, 210, 220), font=font_sub)
+    text_x = divider_x + int(14 * scale)
+    draw.text((text_x, int(8 * scale)), title_str, fill=(255, 255, 255), font=font_large)
+    draw.text((text_x, int(8 * scale) + int(title_font_size * 1.05)), sub_str, fill=(210, 210, 220), font=font_sub)
 
-    # 4. Cover bottom supplier timestamp / watermark with clean black bar and branding
-    footer_h = 32
-    draw.rectangle([0, im.height - footer_h, im.width, im.height], fill=(0, 0, 0))
+    # 4. Store branding footer (Text without emoji to avoid tofu square glyphs)
     store_name = config.get("store_name", "VENTO").upper()
-    footer_text = f"🛡️ {store_name} EXCLUSIVE LOCKER"
-    font_foot = get_scalable_font(14, bold=True)
-    draw.text((16, im.height - footer_h + 8), footer_text, fill=(150, 155, 175), font=font_foot)
+    footer_text = f"•  {store_name} EXCLUSIVE LOCKER  •"
+    foot_font_size = max(11, int(15 * scale))
+    font_foot = get_scalable_font(foot_font_size, bold=True)
+    draw.text((int(20 * scale), panel_h - footer_h + int(10 * scale)), footer_text, fill=(150, 155, 175), font=font_foot)
 
     buf = io.BytesIO()
-    im.save(buf, format="JPEG", quality=95)
+    panel.save(buf, format="JPEG", quality=95)
     out_val = buf.getvalue()
-    im.close()
+    panel.close()
     buf.close()
     return out_val
 
